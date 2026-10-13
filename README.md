@@ -24,7 +24,7 @@ magpie plugin options image-budget 'off'        # 清空 → 回到默认
 | key | 默认 | 说明 |
 | --- | --- | --- |
 | `keep` | `10` | 保留最近的几张图（0 = 全丢）。按“图”数，不按消息数 |
-| `placeholder` | `[older image omitted by image-budget]` | 被丢掉的位置换成这句话，同协议形状（anthropic/chat 用 `text`、responses 用 `input_text`、gemini 用 `text`） |
+| `placeholder` | `[older image omitted by image-budget; ask again if you need to look at it]` | 被丢掉的位置换成这句话，同协议形状（anthropic/chat 用 `text`、responses 用 `input_text`、gemini 用 `text`） |
 
 不设 = 用默认。少发的图越多，请求体越小。
 
@@ -32,8 +32,8 @@ magpie plugin options image-budget 'off'        # 清空 → 回到默认
 
 - 做：`onRequest(body, ctx)` 拿整包原始 body，遍历四种协议（anthropic / chat / responses / gemini）里带 base64 的
   图节点，从尾往前数，留最近 `keep` 张，更早的换占位。**没超就算，一个字节都不动。**
-- 不做：**重编码缩图**。moejs 里没有图片编解码器、不能引依赖、没有 timer / fetch / Node API。
-  「图都留着、只降质」得走客户端开关：Codex `/experimental` 的 `unified_image_budget` / `resize_all_images`。
+- 不做：**重编码缩图**。moejs 里没有图片编解码器、不能引依赖、没有 timer / fetch / Node API
+  （`console.log` 有，写进 magpie 的日志）。
 - 代价：模型回看不到老截图。所以它插的占位文字是**给模型看的提示**，模型会知道“这儿有张图被我丢了”。
 - 出错：钩子抛错或超 250ms（单事件 50ms）会被当成不存在、请求原样放行。
 
@@ -45,7 +45,19 @@ magpie plugin options image-budget 'off'        # 清空 → 回到默认
 ## 测试
 
 ```
-cd /path/to/magpie-image-budget && node magpie-image-budget.test.mjs
+bun test
 ```
 
-覆盖：四种协议各丢一遍、未超预算必须逐字节原样、没 options（默认 10）、没 ctx 不炸。
+用例全在 `cases.json`（9 个：四种协议各丢一遍、未超预算逐字节原样、`keep:0`、没 options 用默认 10、
+自定义 placeholder、短 base64 不算图）。跑它们的是社区仓库那份宿主 `scripts/middleware.mjs` —— 和
+magpie 网关调钩子的方式一致，同一份 `cases.json` 在 moejs 里也能跑。
+
+## 要进社区仓库（`magpie-community/plugins`）
+
+这个仓库就是按那份规范写的，只差三件事：
+
+1. 整个文件夹拷到 `packages/image-budget/`；
+2. `package.json` 的 `name` 改成 `@magpie-community/middleware-image-budget`（其余不动）；
+3. `image-budget.test.mjs` 里的 import 路径改成 `../../scripts/middleware.mjs`（删掉本仓库自带的 `scripts/`）。
+
+MIT.

@@ -1,9 +1,18 @@
 {
   "name": "magpie-image-budget",
-  "version": "0.1.0",
-  "private": true,
+  "version": "0.1.1",
+  "description": "magpie gateway middleware: keep only the newest N base64 images in a request, older ones become placeholder text",
   "type": "module",
-  "description": "网关中间件：一张请求里带 base64 的图只保留最近 N 张，更早的换成占位文字（治请求体超限后的 413）",
+  "files": ["image-budget.middleware.js", "README.md", "cases.json"],
+  "keywords": ["magpie", "magpie-middleware", "image-budget", "llm-gateway"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/famiji/magpie-image-budget.git"
+  },
+  "scripts": {
+    "test": "bun test"
+  },
   "magpie": {
     "middleware": "./image-budget.middleware.js",
     "options": {
