@@ -41,6 +41,6 @@ bun test
 
 The 9 cases are in `cases.json` and run through `scripts/middleware.mjs`, the harness `magpie-community/plugins` uses: it calls the hooks the way the gateway does, so the same `cases.json` runs inside magpie on moejs.
 
-MIT.
+## License
 
-中文：magpie 网关中间件 —— 一张请求里带 base64 的图只保留最近 N 张，更早的换成一行占位文字。装：`magpie plugin add github:famiji/magpie-image-budget`。治「历史截图把请求体顶过上游字节上限、之后每轮都 413」的会话。它只能丢图，不能缩图（moejs 里没有图片编解码器）；配置 `keep` / `placeholder`，App 里 Plugins › Installed › Options 改。
+MIT — see [LICENSE](LICENSE).

@@ -1,17 +1,18 @@
-// magpie gateway middleware: 图片预算。
-// 一张请求里带 base64 的图只保留最近 keep 张，更早的换成一行占位文字。
-// 用途：agent 每轮重发整段会话，历史截图会把请求体顶过上游字节上限，之后每轮都是 413。
+// magpie gateway middleware: image budget.
 //
-// 装：magpie plugin add github:famiji/magpie-image-budget
-// 调：magpie plugin options image-budget '{"keep":10}'，或 App 里 Plugins › Installed › Options
-//     keep 不设就是 10；placeholder 不设就是下面这一句
-// 测：bun test（用例在 cases.json，宿主是社区仓库那份 scripts/middleware.mjs）
+// Keeps only the newest base64 images in a request; every older one becomes a
+// single line of placeholder text in the shape the agent's API expects. Agents
+// resend the whole conversation on every turn, so once the images push the body
+// past the endpoint's byte limit, every following turn fails.
 //
-// 只能丢图，不能重编码缩图 —— moejs 里没有图片编解码器、不能引依赖。
-// 要真缩图（图都留着、只降质）得走 agent 自己的开关，例如 Codex /experimental 的
-// unified_image_budget / resize_all_images。
+// It can only drop images, not re-encode them: moejs has no image codec and the
+// middleware cannot pull in dependencies. To keep every image and lower its
+// quality instead, use the agent's own switch — for Codex, /experimental has
+// unified_image_budget and resize_all_images.
+//
+// Options: {"keep": 10, "placeholder": "..."}
 
-const LONG = 2000; // 超过这么长的 base64 才算图，避免误伤普通长文本
+const LONG = 2000; // a base64 payload this long is an image; ordinary long text stays untouched
 
 export function onRequest(body, ctx) {
   const o = (ctx && ctx.options) || {};
@@ -26,20 +27,20 @@ export function onRequest(body, ctx) {
   for (let i = 0; i < found.length - keep; i++) {
     found[i].arr[found[i].idx] = placeholder(ctx, ph);
   }
-  // 进 magpie 日志（最多 60 行/分钟），只在真丢了东西时说话
+  // magpie logs this line, capped at 60 lines/min, and only when something was dropped
   const dropped = found.length - keep;
   console.log(
     "image-budget: kept " + keep + " of " + found.length + " images, dropped " + dropped + (ctx && ctx.model ? " | model=" + ctx.model : ""),
   );
-  return body; // 改动是原地做的，但契约上要回传 body（返回 undefined 等于“原样”）
+  return body; // edited in place, but the contract wants the body back (undefined means "unchanged")
 }
 
-// 占位节点要跟 agent 自己的协议同形，否则下一轮校验不过
+// the placeholder has to match the agent's own protocol, or the next turn fails validation
 function placeholder(ctx, ph) {
   const p = ctx && ctx.protocol;
   if (p === "anthropic" || p === "chat") return { type: "text", text: ph };
   if (p === "responses") return { type: "input_text", text: ph };
-  return { text: ph }; // gemini / 未知
+  return { text: ph }; // gemini / unknown
 }
 
 function collect(node, out) {
@@ -58,9 +59,9 @@ function isImage(el) {
   if (!el || typeof el !== "object" || Array.isArray(el)) return false;
   const inl = el.inlineData || el.inline_data; // gemini
   if (inl && typeof inl.data === "string" && inl.data.length > LONG) return true;
-  const src = el.source; // anthropic: {type:"image",source:{type:"base64",data:"<raw b64>"}}
+  const src = el.source; // anthropic: {type:"image", source:{type:"base64", data:"<raw b64>"}}
   if (el.type === "image" && src && typeof src.data === "string" && src.data.length > LONG) return true;
-  const iu = el.image_url; // chat 与 responses: data URI
+  const iu = el.image_url; // chat and responses: data URI
   const url = typeof iu === "string" ? iu : iu && iu.url;
   return typeof url === "string" && url.length > LONG;
 }
