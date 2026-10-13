@@ -1,0 +1,14 @@
+{
+  "name": "magpie-image-budget",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "网关中间件：一张请求里带 base64 的图只保留最近 N 张，更早的换成占位文字（治请求体超限后的 413）",
+  "magpie": {
+    "middleware": "./image-budget.middleware.js",
+    "options": {
+      "keep": 10,
+      "placeholder": "[older image omitted by image-budget]"
+    }
+  }
+}
