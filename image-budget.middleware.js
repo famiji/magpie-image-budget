@@ -1,16 +1,14 @@
-// magpie 网关中间件：图片预算。
+// magpie gateway middleware: 图片预算。
 // 一张请求里带 base64 的图只保留最近 keep 张，更早的换成一行占位文字。
-// 治的病：历史截图把请求体顶到上游 ~45MB 上限后，每一轮都 413（Codex 那次）。
+// 用途：agent 每轮重发整段会话，历史截图会把请求体顶过上游字节上限，之后每轮都是 413。
 //
 // 装：magpie plugin add github:famiji/magpie-image-budget
-//     （源码在 /Users/fmj/Scripts/misc-scripts/magpie-image-budget，本地调试可以给那个文件夹路径）
-// 调：magpie plugin options image-budget '{"keep":10}' 或 App 里那一行的 Options
+// 调：magpie plugin options image-budget '{"keep":10}'，或 App 里 Plugins › Installed › Options
 //     keep 不设就是 10；placeholder 不设就是下面这一句
-// 卸：magpie plugin remove magpie-image-budget
-// 测：bun test（用例在 cases.json，跑的是社区仓库那份 scripts/middleware.mjs 宿主）
+// 测：bun test（用例在 cases.json，宿主是社区仓库那份 scripts/middleware.mjs）
 //
-// 只能丢图，不能重编码缩图 —— moejs 里没有图片编解码器、也不能引依赖。
-// 要真缩图（图都留着、只降质）得走客户端开关：Codex /experimental 的
+// 只能丢图，不能重编码缩图 —— moejs 里没有图片编解码器、不能引依赖。
+// 要真缩图（图都留着、只降质）得走 agent 自己的开关，例如 Codex /experimental 的
 // unified_image_budget / resize_all_images。
 
 const LONG = 2000; // 超过这么长的 base64 才算图，避免误伤普通长文本
@@ -33,7 +31,7 @@ export function onRequest(body, ctx) {
   console.log(
     "image-budget: kept " + keep + " of " + found.length + " images, dropped " + dropped + (ctx && ctx.model ? " | model=" + ctx.model : ""),
   );
-  return body; // 改动是原地做的，但契约上要回传 body（undefined 等于“原样”，用例里会被当成没改）
+  return body; // 改动是原地做的，但契约上要回传 body（返回 undefined 等于“原样”）
 }
 
 // 占位节点要跟 agent 自己的协议同形，否则下一轮校验不过
