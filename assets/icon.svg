@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- 平底圆角背景 -->
+  <rect x="8" y="8" width="240" height="240" rx="52" fill="#eef1fb"/>
+  <!-- 三张叠放的卡片：从后(旧、最淡)到前(新、实色)，即"只留最新、旧的淡出" -->
+  <rect x="64" y="60" width="122" height="106" rx="14" fill="#ffffff" stroke="#d7dbf0" stroke-width="5"/>
+  <rect x="83" y="76" width="122" height="106" rx="14" fill="#ffffff" stroke="#a9b6f5" stroke-width="6"/>
+  <rect x="102" y="92" width="122" height="106" rx="14" fill="#6366f1"/>
+  <!-- 最前卡片里的白色小图，仍表示"图片" -->
+  <rect x="126" y="116" width="74" height="58" rx="8" fill="#ffffff"/>
+</svg>

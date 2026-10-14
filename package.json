@@ -1,9 +1,9 @@
 {
   "name": "magpie-image-budget",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "magpie gateway middleware: keep only the newest N base64 images in a request, older ones become placeholder text",
   "type": "module",
-  "files": ["image-budget.middleware.js", "README.md", "cases.json"],
+  "files": ["image-budget.middleware.js", "README.md", "cases.json", "assets/icon.svg"],
   "keywords": ["magpie", "magpie-middleware", "opencode", "opencode-plugin", "image-budget", "llm-gateway"],
   "license": "MIT",
   "repository": {
@@ -15,9 +15,13 @@
   },
   "magpie": {
     "middleware": "./image-budget.middleware.js",
+    "icon": "https://raw.githubusercontent.com/famiji/magpie-image-budget/main/assets/icon.svg",
     "options": {
       "keep": 10,
-      "placeholder": "[older image omitted by image-budget]"
+      "placeholder": "[older image omitted by image-budget]",
+      "maxBytes": 0,
+      "agents": [],
+      "models": []
     }
   }
 }
