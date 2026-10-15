@@ -1,10 +1,22 @@
 {
   "name": "magpie-image-budget",
-  "version": "0.2.0",
-  "description": "magpie gateway middleware: keep only the newest N base64 images in a request, older ones become placeholder text",
+  "version": "0.3.0",
+  "description": "magpie gateway middleware: keep only the newest N base64 images in a request, drop oversized ones, older ones become placeholder text",
   "type": "module",
-  "files": ["image-budget.middleware.js", "README.md", "cases.json", "assets/icon.svg"],
-  "keywords": ["magpie", "magpie-middleware", "opencode", "opencode-plugin", "image-budget", "llm-gateway"],
+  "files": [
+    "image-budget.middleware.js",
+    "README.md",
+    "cases.json",
+    "assets/icon.svg"
+  ],
+  "keywords": [
+    "magpie",
+    "magpie-middleware",
+    "opencode",
+    "opencode-plugin",
+    "image-budget",
+    "llm-gateway"
+  ],
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -18,8 +30,9 @@
     "icon": "https://raw.githubusercontent.com/famiji/magpie-image-budget/main/assets/icon.svg",
     "options": {
       "keep": 10,
-      "placeholder": "[older image omitted by image-budget]",
       "maxBytes": 0,
+      "maxDimension": 8192,
+      "placeholder": "[older image omitted by image-budget]",
       "agents": [],
       "models": []
     }
