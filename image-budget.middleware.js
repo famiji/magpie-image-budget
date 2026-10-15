@@ -14,11 +14,14 @@
 // quality instead, use the agent's own switch — for Codex, /experimental has
 // unified_image_budget and resize_all_images.
 //
-// Options: {"keep": 10, "maxBytes": 0, "maxDimension": 8192, "placeholder": "...", "agents": [], "models": []}
+// Options: {"keep": 10, "maxBytes": 0, "maxDimension": 8192, "placeholder": "...", "oversizePlaceholder": "...", "agents": [], "models": []}
 
 const LONG = 2000; // a base64 payload this long is an image; ordinary long text stays untouched
 const DEF_DIM = 8192; // pixels per side; opencode's zen and volcengine ark both reject more
 const JPEG_SCAN = [4096, 65536]; // a JPEG's SOF marker is near the front, unless a big EXIF block pushes it back
+// what an oversized image becomes: it says which image went, how big it was and
+// what the limit is, so the model can ask for a resized copy instead of guessing
+const DEF_OVERSIZE = "[image omitted by image-budget: {w}x{h} px, over the {max} px limit; send a resized copy if you need it]";
 
 export function onRequest(body, ctx) {
   const o = (ctx && ctx.options) || {};
@@ -37,16 +40,17 @@ export function onRequest(body, ctx) {
     typeof o.placeholder === "string"
       ? o.placeholder
       : "[older image omitted by image-budget; ask again if you need to look at it]";
+  const ovPh = typeof o.oversizePlaceholder === "string" ? o.oversizePlaceholder : DEF_OVERSIZE;
 
   const found = [];
   collect(body, found);
   if (!found.length) return;
 
   // oversized first: these go whatever their age, and they take no keep slot
-  const oversize = new Set();
+  const oversize = new Map(); // index -> [width, height]
   for (let i = 0; i < found.length; i++) {
     const d = dims(found[i].el);
-    if (d && (d[0] > maxDim || d[1] > maxDim)) oversize.add(i);
+    if (d && (d[0] > maxDim || d[1] > maxDim)) oversize.set(i, d);
   }
 
   // keep the newest images while under both budgets (count and bytes); the
@@ -67,7 +71,9 @@ export function onRequest(body, ctx) {
   let dropTo = 0;
   for (let i = 0; i < found.length; i++) {
     if (keepAt.has(i)) continue;
-    found[i].arr[found[i].idx] = placeholder(ctx, ph);
+    const d = oversize.get(i);
+    const text = d ? fill(ovPh, { w: d[0], h: d[1], max: maxDim }) : ph;
+    found[i].arr[found[i].idx] = placeholder(ctx, text);
     dropTo++;
   }
   if (!dropTo) return; // nothing to drop: leave the body untouched
@@ -80,6 +86,11 @@ export function onRequest(body, ctx) {
       (ctx && ctx.model ? " | model=" + ctx.model : ""),
   );
   return body; // edited in place, but the contract wants the body back (undefined means "unchanged")
+}
+
+// fill {w} {h} {max} in an oversized-image template
+function fill(tpl, v) {
+  return tpl.split("{w}").join(v.w).split("{h}").join(v.h).split("{max}").join(v.max);
 }
 
 // the placeholder has to match the agent's own protocol, or the next turn fails validation

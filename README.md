@@ -13,6 +13,7 @@ Install it from magpie's **Plugins › Discover**, or with `magpie plugin add gi
   "maxBytes": 0,
   "maxDimension": 8192,
   "placeholder": "[older image omitted by image-budget; ask again if you need to look at it]",
+  "oversizePlaceholder": "[image omitted by image-budget: {w}x{h} px, over the {max} px limit; send a resized copy if you need it]",
   "agents": [],
   "models": [] }
 ```
@@ -22,11 +23,14 @@ Install it from magpie's **Plugins › Discover**, or with `magpie plugin add gi
 | `keep` | How many of the newest images to keep (default `10`; `0` drops them all). Counted per image, not per message. |
 | `maxBytes` | The byte budget: keep the newest images while their combined payload stays under it. `0` (the default) counts images only. |
 | `maxDimension` | The pixel budget: an image wider or taller than this is dropped whatever its age. Default `8192`. `0` turns the check off. |
-| `placeholder` | What a dropped image becomes, in that API's own shape: `text` for Anthropic, Chat and Gemini, `input_text` for Responses. Defaults to the line above. |
+| `placeholder` | What an image dropped for age becomes, in that API's own shape: `text` for Anthropic, Chat and Gemini, `input_text` for Responses. Defaults to the line above. |
+| `oversizePlaceholder` | What an image dropped for its size becomes. `{w}`, `{h}` and `{max}` are replaced with the image's width, its height and the limit in force, so the model can tell which image went and what to do about it. |
 | `agents` | When given, trim only requests from these agents, by magpie's agent ids (`codex`, `claude`, `opencode`, …). An empty list (the default) applies to every agent. |
 | `models` | When given, trim only requests whose model name begins with one of these prefixes. An empty list (the default) applies to every model. |
 
 The pixel size is read from the base64 at the front of a PNG or JPEG (a JPEG's frame header is searched for in the first 4 KB, then the first 64 KB, since a large EXIF block can push it back); an image in another format, or one the reader cannot make sense of, is left alone. A number of endpoints cap a side at 8000 or 8192 pixels and reject the whole request over one image past it, so the default is on. A request that is under every budget is left byte for byte alone.
+
+Every placeholder is written in English, since it lands in a model's context rather than in front of a person.
 
 ### An example
 
@@ -56,10 +60,10 @@ Every request that drops something logs one line into magpie's log — `image-bu
 bun test
 ```
 
-The 20 cases are in `cases.json` and run through `scripts/middleware.mjs`, the harness `magpie-community/plugins` uses: it calls the hooks the way the gateway does, so the same `cases.json` runs inside magpie on moejs.
+The 23 cases are in `cases.json` and run through `scripts/middleware.mjs`, the harness `magpie-community/plugins` uses: it calls the hooks the way the gateway does, so the same `cases.json` runs inside magpie on moejs.
 
 ## License
 
 MIT — see [LICENSE](LICENSE).
 
-中文：magpie 网关中间件，按张数、字节或像素预算保留请求里的图片，更早的、以及单边超尺寸的替换成一行占位文字，避免长会话请求体超限或单张大图撑爆端点而全部失败。可按 agent 或模型限定生效范围。
+中文：magpie 网关中间件，按张数、字节或像素预算保留请求里的图片，更早的、以及单边超尺寸的替换成一行占位文字（各带各的原因与原图尺寸），避免长会话请求体超限或单张大图撑爆端点而全部失败。可按 agent 或模型限定生效范围。
